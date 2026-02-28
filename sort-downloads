@@ -1,0 +1,53 @@
+#!/bin/bash
+
+DOWNLOADS="$HOME/Downloads"
+CASE_INSENSITIVE=true  # true = case-insensitive
+
+declare -A FILE_CATEGORIES=(
+  [Pictures]="jpg jpeg png gif webp svg heic bmp tiff"
+  [Videos]="mp4 mkv webm mov avi flv m4v"
+  [Archives]="zip tar.gz tar rar 7z gz bz2 iso"
+  [Documents]="pdf doc docx xls xlsx ppt pptx txt md odt rtf csv"
+  [Music]="mp3 flac wav aac ogg m4r m4a"
+  [Books]="epub mobi azw3 djvu cbz cbr"
+  [Programs]="exe AppImage deb rpm sh py js jar pl go"
+  [Fonts]="ttf otf woff woff2"
+)
+
+# Ensure all folders exist
+for folder in "${!FILE_CATEGORIES[@]}" Dirs Others; do
+  mkdir -p "$DOWNLOADS/$folder"
+done
+
+# Enable case-insensitive matching if needed
+if [ "$CASE_INSENSITIVE" = true ]; then
+  shopt -s nocaseglob
+fi
+
+for file in "$DOWNLOADS"/*; do
+  [ -e "$file" ] || continue
+
+  if [ -f "$file" ]; then
+    moved=false
+    for folder in "${!FILE_CATEGORIES[@]}"; do
+      for ext in ${FILE_CATEGORIES[$folder]}; do
+        if [[ "$file" == *.$ext ]]; then
+          mv "$file" "$DOWNLOADS/$folder/"
+          moved=true
+          break 2
+        fi
+      done
+    done
+    $moved || mv "$file" "$DOWNLOADS/Others/"
+
+  elif [ -d "$file" ]; then
+    case "$(basename "$file")" in
+      Pictures|Videos|Archives|Documents|Music|Books|Programs|Fonts|Others|Dirs)
+        ;; # skip managed dirs
+      *)
+        mv "$file" "$DOWNLOADS/Dirs/" ;;
+    esac
+  fi
+done
+
+echo "Downloads sorted!"
